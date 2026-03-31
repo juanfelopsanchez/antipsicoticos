@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Quiz Antipsicóticos</title>
+
+<style>
+body { font-family: Arial; background:#eef2f7; text-align:center; }
+.container { max-width:650px; margin:auto; background:white; padding:25px; border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+input, button { padding:10px; margin:8px; }
+button { cursor:pointer; border:none; border-radius:6px; background:#4CAF50; color:white; }
+#skip { background:#f39c12; }
+#next { background:#3498db; }
+#timer { font-size:18px; font-weight:bold; }
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🧠 Quiz Antipsicóticos</h2>
+
+<div id="start">
+<input id="name" placeholder="Tu nombre">
+<br>
+<button id="startBtn">Iniciar Quiz</button>
+</div>
+
+<div id="quiz" style="display:none;">
+<p id="progress"></p>
+<p id="timer"></p>
+<p id="question"></p>
+
+<input id="answer" placeholder="Escribe tu respuesta">
+<br>
+
+<button id="submit">Responder</button>
+<button id="skip">No estoy seguro</button>
+
+<p id="feedback"></p>
+<button id="next" style="display:none;">Siguiente</button>
+</div>
+
+<div id="result" style="display:none;"></div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+let questions = [
+
+{q:"Receptor principal bloqueado por antipsicóticos típico generando efecto terapéutico", a:["d2","dopamina d2"]},
+
+{q:"Antipsicótico típico de alta potencia asociado a alto riesgo de efectos extrapiramidales", a:["haloperidol"]},
+
+{q:"Antipsicótico atípico que bloquea D2 y 5-HT2A con menor riesgo de EPS", a:["clozapina","risperidona","olanzapina"]},
+
+{q:"Efecto adverso caracterizado por rigidez, fiebre y alteración del estado mental por uso de antipsicóticos", a:["sindrome neuroleptico maligno"]},
+
+{q:"Efecto extrapiramidal temprano caracterizado por contracciones musculares dolorosas", a:["distonia aguda"]},
+
+{q:"Efecto extrapiramidal caracterizado por inquietud motora", a:["acatisia"]},
+
+{q:"Efecto extrapiramidal tardío caracterizado por movimientos involuntarios repetitivos", a:["discinesia tardia"]},
+
+{q:"Antipsicótico asociado a agranulocitosis que requiere monitoreo hematológico", a:["clozapina"]},
+
+{q:"Antipsicótico típico de baja potencia con mayor efecto sedante", a:["clorpromazina"]},
+
+{q:"Fármaco que bloquea D2 reduciendo síntomas positivos de esquizofrenia", a:["haloperidol","clorpromazina"]},
+
+{q:"Antipsicótico que causa aumento de prolactina por bloqueo dopaminérgico", a:["haloperidol","risperidona"]},
+
+{q:"Efecto adverso por bloqueo muscarínico en antipsicóticos", a:["boca seca","vision borrosa"]},
+
+{q:"Antipsicótico que tiene menor riesgo de EPS y mejora síntomas negativos", a:["clozapina","olanzapina"]},
+
+{q:"Caso: paciente con esquizofrenia presenta rigidez y fiebre tras iniciar fármaco, diagnóstico", a:["sindrome neuroleptico maligno"]},
+
+{q:"Efecto adverso de antipsicóticos por bloqueo H1", a:["sedacion"]},
+
+{q:"Antipsicótico atípico que puede causar aumento de peso significativo", a:["olanzapina","clozapina"]},
+
+{q:"Fármaco que mejora síntomas negativos al bloquear serotonina", a:["clozapina","risperidona"]},
+
+{q:"Efecto adverso cardiovascular de antipsicóticos tricíclicos", a:["prolongacion qt","arritmias"]},
+
+{q:"Efecto extrapiramidal que aparece horas a días después del inicio", a:["distonia aguda"]},
+
+{q:"Antipsicótico usado en urgencias por su potente acción sedante", a:["haloperidol"]},
+
+{q:"Efecto adverso por bloqueo alfa1 en antipsicóticos", a:["hipotension ortostatica"]},
+
+{q:"Fármaco que bloquea dopamina generando síntomas extrapiramidales", a:["haloperidol"]},
+
+{q:"Efecto adverso tardío por uso prolongado de antipsicóticos", a:["discinesia tardia"]},
+
+{q:"Antipsicótico con menor riesgo de hiperprolactinemia", a:["clozapina"]},
+
+{q:"Caso: paciente con movimientos involuntarios tras años de tratamiento, diagnóstico", a:["discinesia tardia"]},
+
+{q:"Fármaco que bloquea D2 en vía mesolímbica reduciendo alucinaciones", a:["haloperidol","clorpromazina"]}
+
+];
+
+let selected = [];
+let index = 0;
+let score = 0;
+let timer;
+let timeLeft = 60;
+let answered = false;
+
+function normalize(text){
+return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function startQuiz(){
+let name = document.getElementById("name").value;
+if(!name) return alert("Ingresa tu nombre");
+
+localStorage.setItem("name", name);
+
+selected = questions.sort(()=>0.5-Math.random()).slice(0,10);
+index = 0;
+score = 0;
+
+document.getElementById("start").style.display="none";
+document.getElementById("quiz").style.display="block";
+
+loadQuestion();
+}
+
+function loadQuestion(){
+answered = false;
+timeLeft = 60;
+
+document.getElementById("answer").value="";
+document.getElementById("answer").disabled=false;
+document.getElementById("feedback").innerHTML="";
+document.getElementById("next").style.display="none";
+
+document.getElementById("progress").innerText=`Pregunta ${index+1}/10`;
+document.getElementById("question").innerText=selected[index].q;
+
+startTimer();
+}
+
+function startTimer(){
+clearInterval(timer);
+timer = setInterval(()=>{
+timeLeft--;
+document.getElementById("timer").innerText=`⏱️ ${timeLeft}s`;
+
+if(timeLeft<=0){
+clearInterval(timer);
+handleAnswer(null,true);
+}
+},1000);
+}
+
+function handleAnswer(userAnswer, timeout=false){
+if(answered) return;
+answered = true;
+clearInterval(timer);
+
+document.getElementById("answer").disabled = true;
+
+let correctAnswers = selected[index].a.map(a=>normalize(a));
+let user = normalize(userAnswer || "");
+
+let isCorrect = correctAnswers.includes(user);
+
+let points = isCorrect ? Math.round((timeLeft/60)*10) : 0;
+score += points;
+
+let feedback = "";
+
+if(timeout){
+feedback = `❌ Tiempo agotado (0 pts)<br>Respuesta: ${correctAnswers[0]}`;
+}else if(userAnswer===null){
+feedback = `❌ 0 pts<br>Respuesta: ${correctAnswers[0]}`;
+}else if(isCorrect){
+feedback = `✅ Correcto (+${points})`;
+}else{
+feedback = `❌ Incorrecto (0 pts)<br>Respuesta: ${correctAnswers[0]}`;
+}
+
+document.getElementById("feedback").innerHTML=feedback;
+document.getElementById("next").style.display="block";
+}
+
+function nextQuestion(){
+index++;
+if(index<10){
+loadQuestion();
+}else{
+endQuiz();
+}
+}
+
+function endQuiz(){
+document.getElementById("quiz").style.display="none";
+document.getElementById("result").style.display="block";
+
+let name = localStorage.getItem("name");
+let record = {name, score, date:new Date().toISOString(), tema:"antipsicoticos"};
+
+let history = JSON.parse(localStorage.getItem("history")||"[]");
+history.push(record);
+localStorage.setItem("history", JSON.stringify(history));
+
+document.getElementById("result").innerHTML = `
+<h3>🎯 Puntaje: ${score}/100</h3>
+<button onclick="location.reload()">Reintentar</button>
+`;
+}
+
+document.getElementById("startBtn").addEventListener("click", startQuiz);
+document.getElementById("submit").addEventListener("click", ()=>handleAnswer(document.getElementById("answer").value));
+document.getElementById("skip").addEventListener("click", ()=>handleAnswer(null));
+document.getElementById("next").addEventListener("click", nextQuestion);
+
+});
+</script>
+
+</body>
+</html>
